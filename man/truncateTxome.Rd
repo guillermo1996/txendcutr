@@ -10,6 +10,7 @@ truncateTxome(
   maxTxLength = 500,
   txEnd = "3prime",
   overlapFile = NULL,
+  BPPARAM = bpparam(),
   ...
 )
 
@@ -17,8 +18,8 @@ truncateTxome(
   txdb,
   maxTxLength = 500,
   txEnd = "3prime",
-  BPPARAM = bpparam(),
-  overlapFile = NULL
+  overlapFile = NULL,
+  BPPARAM = bpparam()
 )
 }
 \arguments{
@@ -32,10 +33,10 @@ truncateTxome(
 overlaps (query_transcript, subject_transcript) post-truncation. If NULL,
 no file is exported.}
 
-\item{...}{additional arguments}
-
 \item{BPPARAM}{A \linkS4class{BiocParallelParam} object specifying whether
 and how the method should be parallelized.}
+
+\item{...}{additional arguments}
 }
 \value{
 a \code{TxDb} object
