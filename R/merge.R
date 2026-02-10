@@ -47,6 +47,7 @@ setGeneric("generateMergeTable", signature=c("txdb", "minDistance"),
 #' @importFrom GenomicFeatures transcripts
 #' @importFrom methods setMethod
 #' @importFrom stats setNames
+#' @importFrom dplyr group_by arrange slice_head ungroup
 #' @export
 setMethod("generateMergeTable", "TxDb", function(txdb, minDistance=200L) {
     grTxs <- transcripts(txdb,
@@ -85,14 +86,14 @@ setMethod("generateMergeTable", "TxDb", function(txdb, minDistance=200L) {
     }
 
     ## pick unique out
-    groupedOverlaps <- split(overlaps, overlaps$queryHits)
-    singleOverlaps <- lapply(groupedOverlaps,
-                             function (df) {
-                                 df[with(df, order(-end_out, tx_out)),][1,]
-                             })
-    dfMerge <- do.call(rbind, singleOverlaps)[, c("tx_in", "tx_out")]
+    dfMerge <- overlaps %>% 
+      dplyr::group_by(queryHits) %>% 
+      dplyr::arrange(-end_out, tx_out, .by_group = T) %>% 
+      dplyr::slice_head(n = 1) %>% 
+      dplyr::ungroup() %>% 
+      dplyr::select(tx_in, tx_out)
     dfMerge <- .propagateMap(dfMerge)
-
+    
     ## include self-maps
     unmergedTxs <- grTxs$tx_name[!(grTxs$tx_name %in% dfMerge$tx_in)]
     dfMerge <- rbind(dfMerge, data.frame(tx_in=unmergedTxs, tx_out=unmergedTxs))
@@ -104,7 +105,7 @@ setMethod("generateMergeTable", "TxDb", function(txdb, minDistance=200L) {
     ## reorder and drop rownames
     dfMerge <- dfMerge[with(dfMerge, order(tx_in)),]
     rownames(dfMerge) <- NULL
-
+    
     dfMerge
 }
 )

@@ -128,8 +128,8 @@ setMethod("truncateTxome", "TxDb", function(txdb,
     }
     
     ### write in disk
-    write.csv(matched_overlaps, overlapFile, row.names = F, quote = F)
-    message(sprintf("Post-truncation transcript overlaps exported to: ", overlapFile))
+    write.table(matched_overlaps, overlapFile, sep="\t", row.names=FALSE, quote=FALSE)
+    message("Post-truncation transcript overlaps exported to: ", overlapFile)
   }
   
   ## Remove overlaps
