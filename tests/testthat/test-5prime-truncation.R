@@ -18,10 +18,10 @@ gr_single_contig_w1000 <- GRanges(
   tx_id=c(NA, "tx_1", "tx_1"),
   exon_id=c(NA, NA, "exon_1"))
 
-txdb_single_contig_w1000 <- makeTxDbFromGRanges(gr_single_contig_w1000)
+txdb_single_contig_w1000 <- .suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_single_contig_w1000))
 
 ## Negative Strand
-txdb_single_contig_w1000_neg <- makeTxDbFromGRanges(invertStrand(gr_single_contig_w1000))
+txdb_single_contig_w1000_neg <- .suppressTxDbGenomeWarning(makeTxDbFromGRanges(invertStrand(gr_single_contig_w1000)))
 
 ## Multi Exon
 gr_multi_exon <- GRanges(
@@ -36,10 +36,10 @@ gr_multi_exon <- GRanges(
   tx_id=c(NA, "tx_1", "tx_1", "tx_1", "tx_1"),
   exon_id=c(NA, NA, "exon_1", "exon_2", "exon_3"))
 
-txdb_multi_exon <- makeTxDbFromGRanges(gr_multi_exon)
+txdb_multi_exon <- .suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_multi_exon))
 
 ## Negative Strand
-txdb_multi_exon_neg <- makeTxDbFromGRanges(invertStrand(gr_multi_exon))
+txdb_multi_exon_neg <- .suppressTxDbGenomeWarning(makeTxDbFromGRanges(invertStrand(gr_multi_exon)))
 
 ########
 ## Tests
@@ -132,5 +132,24 @@ test_that("spliced truncation works, negative strand", {
       function (x) { end(genes(x)) },
       function (x) { end(transcripts(x)) },
       function (x) { max(end(exons(x))) }))
+  }
+})
+
+test_that("simple truncation works with wrapper, positive strand", {
+  LENGTHS_TO_TEST <- c(100, 500)
+  
+  for (n in LENGTHS_TO_TEST) {
+    txdb_res <- truncate5primeTxome(txdb_single_contig_w1000, maxTxLength=n)
+    
+    ## correct lengths
+    expect_equal(width(genes(txdb_res)), n)
+    expect_equal(width(transcripts(txdb_res)), n)
+    expect_equal(width(exons(txdb_res)), n)
+    
+    ## correct 5' ends
+    expect_equal_applied(txdb_res, txdb_single_contig_w1000, fns=list(
+      function (x) { start(genes(x)) },
+      function (x) { start(transcripts(x)) },
+      function (x) { start(exons(x)) }))
   }
 })

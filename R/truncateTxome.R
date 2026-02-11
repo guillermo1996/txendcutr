@@ -1,35 +1,88 @@
 #' @rdname truncateTxome
-#' @param txdb an object representing a transcriptome
-#' @param maxTxLength the maximum length of resulting transcripts
-#' @param txEnd transcript truncation end
-#' @param overlapFile (optional) path to export a CSV file containing transcript
-#'   overlaps (query_transcript, subject_transcript) post-truncation. If NULL,
-#'   no file is exported.
-#' @param ... additional arguments
-#'
-#' @return a \code{TxDb} object
 #' @export
-#'
-#' @importFrom methods setGeneric
-#' @importFrom BiocParallel bpparam
-setGeneric("truncateTxome",
-  signature = c("txdb", "maxTxLength", "txEnd", "overlapFile"),
-  function(txdb, maxTxLength = 500, txEnd = "3prime", overlapFile = NULL, BPPARAM = bpparam(), ...) standardGeneric("truncateTxome")
+setGeneric("truncateTxome", function(txdb, maxTxLength = 500, txEnd = "3prime", overlapFile = NULL, BPPARAM = bpparam(), ...) {
+  standardGeneric("truncateTxome")
+}
 )
+
+#' @rdname truncateTxome
+#' @export
+setGeneric("truncate3primeTxome", function(txdb, maxTxLength = 500, overlapFile = NULL, BPPARAM = bpparam(), quiet = FALSE, ...) {
+  standardGeneric("truncate3primeTxome")
+} 
+)
+
+#' @rdname truncateTxome
+#' @export
+setMethod("truncate3primeTxome", "TxDb", function(txdb, maxTxLength = 500, overlapFile = NULL, 
+                                                  BPPARAM = bpparam(), quiet = FALSE, ...) {
+  if (quiet) {
+    suppressMessages(
+      truncateTxome(txdb, maxTxLength = maxTxLength, txEnd = "3prime", 
+                    overlapFile = overlapFile, BPPARAM = BPPARAM, ...)
+    )
+  } else {
+    truncateTxome(txdb, maxTxLength = maxTxLength, txEnd = "3prime", 
+                  overlapFile = overlapFile, BPPARAM = BPPARAM, ...)
+  }
+})
+
+
+#' @rdname truncateTxome
+#' @export
+setGeneric("truncate5primeTxome", function(txdb, maxTxLength = 300, overlapFile = NULL, 
+                                           BPPARAM = bpparam(), quiet = FALSE, ...) {
+  standardGeneric("truncate5primeTxome")
+}
+)
+
+#' @rdname truncateTxome
+#' @export
+setMethod("truncate5primeTxome", "TxDb", function(txdb, maxTxLength = 300, overlapFile = NULL, 
+                                                  BPPARAM = bpparam(), quiet = FALSE, ...) {
+  if (quiet) {
+    suppressMessages(
+      truncateTxome(txdb, maxTxLength = maxTxLength, txEnd = "5prime", 
+                    overlapFile = overlapFile, BPPARAM = BPPARAM, ...)
+    )
+  } else {
+    truncateTxome(txdb, maxTxLength = maxTxLength, txEnd = "5prime", 
+                  overlapFile = overlapFile, BPPARAM = BPPARAM, ...)
+  }
+})
+
 
 #' Truncate Transcriptome
 #'
-#' @rdname truncateTxome
+#' Truncate transcripts to a specific maximum length from either the 3' or 5'
+#' end, keeping only the terminal portion of each transcript.
 #'
-#' @param txdb a \code{TxDb} object
-#' @param maxTxLength the maximum length of transcripts
-#' @param txEnd transcript truncation end
+#' @param txdb a \code{TxDb} object representing the transcriptome annotation
+#' @param maxTxLength the maximum length of transcripts. Defaults to 500 bp
+#' @param txEnd transcript truncation end, either `3prime` (default) or
+#'   `5prime`.
+#' @param overlapFile optional path to export a TSV file containing transcript
+#'   overlaps (query_transcript, subject_transcript) post-truncation. If NULL
+#'   (default), no file is exported.
 #' @param BPPARAM A \linkS4class{BiocParallelParam} object specifying whether
 #'   and how the method should be parallelized.
-#' @param overlapFile (optional) path to export a CSV file containing transcript
-#'   overlaps (query_transcript, subject_transcript) post-truncation. If NULL,
-#'   no file is exported.
+#' @param quiet suppress progress messages. Only available for
+#'   \code{truncate3primeTxome} and \code{truncate5primeTxome}. Defaults to
+#'   FALSE
 #' @return a \code{TxDb} object
+#'
+#' @details \code{truncate3primeTxome} and \code{truncate5primeTxome} are
+#'   wrappers that call \code{truncateTxome} with \code{txEnd} preset to
+#'   "3prime" or "5prime" respectively. They also provide a \code{quiet}
+#'   parameter to suppress messages.
+#'
+#' The function performs the following steps:
+#' \enumerate{
+#'   \item Truncates each transcript to the specified maximum length from the chosen end
+#'   \item Identifies duplicate transcripts (transcripts
+#'         with identical coordinates belonging to the same gene) and removes them to avoid redundancy
+#'   \item Rebuilds the TxDb object with updated gene, transcript, and exon ranges
+#' }
 #'
 #' @examples
 #' library(TxDb.Scerevisiae.UCSC.sacCer3.sgdGene)
@@ -51,7 +104,16 @@ setGeneric("truncateTxome",
 #' ## first 500 nts per tx (5' truncation)
 #' txdb_5p_w500 <- truncateTxome(txdb, txEnd = "5prime")
 #' txdb_5p_w500
+#' 
+#' ## using convenience wrapper. Same as truncateTxome(..., txEnd = "3prime")
+#' txdb_3p <- truncate3primeTxome(txdb, maxTxLength = 500)
 #'
+#' ## Suppress messages with quiet parameter
+#' txdb_quiet <- truncate3primeTxome(txdb, quiet = TRUE)
+#'
+#' ## Export overlap information
+#' txdb_w500 <- truncateTxome(txdb, overlapFile = "overlaps.tsv")
+#' 
 #' @importFrom GenomicRanges GRangesList GRanges mcols
 #' @importFrom GenomicFeatures exonsBy
 #' @importFrom txdbmaker makeTxDbFromGRanges
@@ -62,6 +124,7 @@ setGeneric("truncateTxome",
 #' @importFrom dplyr %>%
 #' @importFrom tibble as_tibble
 #' @export
+#' @rdname truncateTxome
 setMethod("truncateTxome", "TxDb", function(txdb,
                                             maxTxLength = 500,
                                             txEnd = "3prime",
@@ -87,7 +150,7 @@ setMethod("truncateTxome", "TxDb", function(txdb,
   ############################################################################
   # Transcript truncation
   message("Truncating transcripts...")
-  clipped = .clipTranscript(grlExons, maxTxLength = maxTxLength, txEnd = txEnd, BPPARAM = BPPARAM)
+  clipped <- .clipTranscript(grlExons, maxTxLength = maxTxLength, txEnd = txEnd, BPPARAM = BPPARAM)
   message("Done.")
   
   ############################################################################
@@ -133,11 +196,13 @@ setMethod("truncateTxome", "TxDb", function(txdb,
   }
   
   ## Remove overlaps
-  duplicates <- unique(matched_overlaps$queryHits)
-  if (length(duplicates) > 0) {
-    grlC_clipped <- grlC_clipped[-duplicates]
+  if (nrow(matched_overlaps) > 0){
+    tx_to_remove <- unique(matched_overlaps$queryHits)
+    grlC_clipped <- grlC_clipped[-tx_to_remove]
+    message(sprintf("Removed %d duplicates.", length(tx_to_remove)))
+  }else{
+    message("No duplicated transcripts found.")
   }
-  message(sprintf("Removed %d duplicates.", length(duplicates)))
 
   ############################################################################
   # Create the final exon ranges
@@ -181,8 +246,8 @@ setMethod("truncateTxome", "TxDb", function(txdb,
   ############################################################################
   # Generate the final TxDb object
   dfMetadata <- data.frame(
-    name=c("Truncated by", "Maximum Transcript Length"),
-    value=c("txendcutr", maxTxLength)
+    name=c("Truncated by", "Maximum Transcript Length", "Truncation End"),
+    value=c("txendcutr", maxTxLength, txEnd)
   )
   
   .suppressTxDbGenomeWarning(
@@ -200,6 +265,7 @@ setMethod("truncateTxome", "TxDb", function(txdb,
 #' @param grl a \code{CompressedGRangesList} object
 #' @param maxTxLength a positive integer
 #' @param txEnd transcript truncation end
+#' @param BPPARAM A \linkS4class{BiocParallelParam} object for parallelization
 #'
 #' @return the truncated \code{GRanges} object
 #'
@@ -274,9 +340,8 @@ setMethod("truncateTxome", "TxDb", function(txdb,
     dplyr::arrange(transcript_id)
   
   exons_truncated_gr <- makeGRangesFromDataFrame(exons_truncated_df, keep.extra.columns = T, seqinfo = seqinfo(exons_gr))
-  exons_truncated_gr <- sort(exons_truncated_gr)
-  
   if(txEnd == "5prime") exons_truncated_gr <- invertStrand(exons_truncated_gr)
+  exons_truncated_gr <- sort(exons_truncated_gr)
   
   return(exons_truncated_gr)
 }
