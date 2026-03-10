@@ -9,28 +9,10 @@
 > transcript end truncation, along with performance optimizations. See
 > branches `5prime_extension` and `optimizations` for specific changes.
 
-<!-- badges: start -->
-
-[![R build
-status](https://github.com/mfansler/txcutr/workflows/R-CMD-check-bioc/badge.svg)](https://github.com/mfansler/txcutr/actions)
-[![codecov](https://codecov.io/gh/mfansler/txcutr/branch/bioc-check/graph/badge.svg?token=CGGZP68G67)](https://codecov.io/gh/mfansler/txcutr)
-[![Anaconda-Server
-Badge](https://anaconda.org/bioconda/bioconductor-txcutr/badges/version.svg)](https://anaconda.org/bioconda/bioconductor-txcutr)
-<!-- badges: end -->
-
-## Overview
-
-Various mRNA sequencing library preparation methods generate sequencing
-reads from the transcript ends. Quantification of isoform usage can be
-improved by using truncated versions of transcriptome annotations when
-assigning such reads to isoforms. The `txendcutr` package implements
-some convenience methods for readily generating such truncated
-annotations and their corresponding sequences.
-
 **This fork extends the original txcutr functionality to include:**
 
 - 5’ end truncation (in addition to the original 3’ truncation)
-- Export of overlapped exons post-truncation
+- Export of duplicated exons post-truncation
 - Performance optimizations
 
 ## Development Status
@@ -41,9 +23,7 @@ This is an active fork with the following branches:
   export
 - `optimizations` - Performance improvements built on the above features
 
-## Installation instructions
-
-### From GitHub (Development Fork)
+## Installation of the Development Fork from GitHub
 
 You can install it directly from GitHub using:
 
@@ -60,6 +40,23 @@ To install the optimized version:
 ``` r
 BiocManager::install("guillermo1996/txendcutr@optimizations")
 ```
+
+<!-- badges: start
+[![R build status](https://github.com/mfansler/txcutr/workflows/R-CMD-check-bioc/badge.svg)](https://github.com/mfansler/txcutr/actions)
+[![codecov](https://codecov.io/gh/mfansler/txcutr/branch/bioc-check/graph/badge.svg?token=CGGZP68G67)](https://codecov.io/gh/mfansler/txcutr)
+[![Anaconda-Server Badge](https://anaconda.org/bioconda/bioconductor-txcutr/badges/version.svg)](https://anaconda.org/bioconda/bioconductor-txcutr)
+<!-- badges: end -->
+
+## Overview
+
+Various mRNA sequencing library preparation methods generate sequencing
+reads from the transcript ends. Quantification of isoform usage can be
+improved by using truncated versions of transcriptome annotations when
+assigning such reads to isoforms. The `txendcutr` package implements
+some convenience methods for readily generating such truncated
+annotations and their corresponding sequences.
+
+## Installation instructions
 
 ### Bioconductor (Not supported for `txendcutr`)
 

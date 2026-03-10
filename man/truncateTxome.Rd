@@ -94,14 +94,12 @@ wrappers that call \code{truncateTxome} with \code{txEnd} preset to
 "3prime" or "5prime" respectively. They also provide a \code{quiet}
 parameter to suppress messages.
 
-\subsection{Algorithm}{
 The function performs the following steps:
 \enumerate{
 \item Truncates each transcript to the specified maximum length from the chosen end
 \item Identifies duplicate transcripts (transcripts
 with identical coordinates belonging to the same gene) and removes them to avoid redundancy
 \item Rebuilds the TxDb object with updated gene, transcript, and exon ranges
-}
 }
 }
 \examples{

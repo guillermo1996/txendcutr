@@ -8,7 +8,7 @@ expect_equal_applied <- function (x, y, fns) {
 }
 
 get_distal_tx_name <- function (gr) {
-  if (all(strand(gr) == '+')) {
+  if (all(GenomicRanges::strand(gr) == '+')) {
     gr$tx_name[which.max(end(gr))]
   } else {
     gr$tx_name[which.min(start(gr))]

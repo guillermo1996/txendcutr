@@ -51,7 +51,6 @@ setMethod(".mutateEach", "SimpleGRangesList",
 #'
 #' @return a \code{txdb} object representing a transcriptome, as returned by the
 #'   expression passed to \code{fn_call}.
-#' 
 .suppressTxDbGenomeWarning <- function(fn_call){
   withCallingHandlers(
     {
