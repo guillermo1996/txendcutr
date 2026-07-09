@@ -1,6 +1,3 @@
-library(GenomicRanges)
-library(txdbmaker)
-
 ############
 ## Mock Data
 ############
@@ -21,10 +18,10 @@ gr_multi_exon <- GRanges(
   exon_id = c(NA, NA, "exon_1", "exon_2", "exon_3")
 )
 
-txdb_multi_exon <- .suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_multi_exon))
+txdb_multi_exon <- txcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_multi_exon))
 
 ## Negative Strand
-txdb_multi_exon_neg <- .suppressTxDbGenomeWarning(makeTxDbFromGRanges(invertStrand(gr_multi_exon)))
+txdb_multi_exon_neg <- txcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(invertStrand(gr_multi_exon)))
 
 ########
 ## Tests

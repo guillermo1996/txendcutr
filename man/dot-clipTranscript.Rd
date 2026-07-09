@@ -4,20 +4,21 @@
 \alias{.clipTranscript}
 \title{Clip Transcript to Given Length}
 \usage{
-.clipTranscript(gr, maxTxLength, txEnd)
+.clipTranscript(grl, maxTxLength, txEnd, BPPARAM)
 }
 \arguments{
-\item{gr}{a \code{GRanges} object}
+\item{grl}{a \code{CompressedGRangesList} object}
 
 \item{maxTxLength}{a positive integer}
 
 \item{txEnd}{transcript truncation end}
+
+\item{BPPARAM}{A \linkS4class{BiocParallelParam} object for parallelization}
 }
 \value{
-the clipped \code{GRanges} object
+the truncated \code{GRanges} object
 }
 \description{
-Internal function for operating on individual \code{GRanges}, where ranges
-represent exons in a transcript. This is designed to be used in an
-\code{*apply} function over a \code{GRangesList} object.
+Internal function for operating on \code{CompressedGRangesList}, where each
+element represents a transcript and its exons.
 }

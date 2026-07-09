@@ -8,7 +8,7 @@ Description: Various mRNA sequencing library preparation methods generate
     implements some convenience methods for readily generating such truncated 
     annotations from either their 5' or 3' transcript ends and their 
     corresponding sequences.
-Version: 1.17.0
+Version: 1.17.1
 Date: 2026-03-10
 Authors@R: c(
     person(given = "Mervin",
@@ -40,9 +40,10 @@ Imports:
     BiocParallel,
     stats,
     methods,
-    utils
+    utils,
+    dplyr,
+    tibble
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
 biocViews: 
     Alignment,
     Annotation,
@@ -62,3 +63,4 @@ Suggests:
     withr
 VignetteBuilder: knitr
 Config/testthat/edition: 3
+Config/roxygen2/version: 8.0.0

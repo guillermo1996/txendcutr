@@ -66,7 +66,7 @@ setMethod("truncate5primeTxome", "TxDb", function(txdb, maxTxLength = 300, overl
 #' @param maxTxLength the maximum length of transcripts. Defaults to 500 bp
 #' @param txEnd transcript truncation end, either `3prime` (default) or
 #'   `5prime`.
-#' @param overlapFile optional path to export a CSV file containing transcript
+#' @param overlapFile optional path to export a TSV file containing transcript
 #'   overlaps (query_transcript, subject_transcript) post-truncation. If NULL
 #'   (default), no file is exported.
 #' @param BPPARAM A \linkS4class{BiocParallelParam} object specifying whether
@@ -124,9 +124,11 @@ setMethod("truncate5primeTxome", "TxDb", function(txdb, maxTxLength = 300, overl
 #' @importFrom txdbmaker makeTxDbFromGRanges
 #' @importFrom BiocParallel bplapply bpparam
 #' @importFrom AnnotationDbi select taxonomyId
-#' @importFrom S4Vectors queryHits subjectHits
+#' @importFrom S4Vectors queryHits subjectHits split
 #' @importFrom methods setMethod
-#' @importFrom utils write.csv
+#' @importFrom dplyr %>%
+#' @importFrom tibble as_tibble
+#' @importFrom utils write.table
 #' @export
 #' @rdname truncateTxome
 setMethod("truncateTxome", "TxDb", function(txdb,
@@ -154,64 +156,60 @@ setMethod("truncateTxome", "TxDb", function(txdb,
   ############################################################################
   # Transcript truncation
   message("Truncating transcripts...")
-  clipped <- bplapply(grlExons, .clipTranscript,
-    maxTxLength = maxTxLength, txEnd = txEnd,
-    BPPARAM = BPPARAM
-  )
-  clipped <- GRangesList(clipped)
+  clipped <- .clipTranscript(grlExons, maxTxLength = maxTxLength, txEnd = txEnd, BPPARAM = BPPARAM)
   message("Done.")
 
   ############################################################################
   # Remove overlapping transcripts
+  
+  ## Split exons by transcript to facilitate finding overlaps
+  grlC_clipped <- S4Vectors::split(clipped, mcols(clipped)["transcript_id"])
+  grlC_clipped_names <- names(grlC_clipped)
+  
+  ## Generate the overlap: look for exact matches between transcripts
   message("Checking for duplicate transcripts...")
-  overlaps <- findOverlaps(clipped,
-    minoverlap = maxTxLength,
-    ignore.strand = FALSE,
-    drop.self = TRUE, drop.redundant = TRUE
-  )
+  # overlaps <- findOverlaps(grlC_clipped, type="equal",
+  #                          ignore.strand=FALSE,
+  #                          drop.self=TRUE, drop.redundant=TRUE)
+  overlaps <- findOverlaps(grlC_clipped, minoverlap=maxTxLength,
+                           ignore.strand=FALSE,
+                           drop.self=TRUE, drop.redundant=TRUE)
 
-  ## ensure genes match
-  if (length(overlaps) > 0) {
-    idx_genes_match <- mapply(function(idx1, idx2) {
-      mapTxToGene[names(clipped[idx1])] == mapTxToGene[names(clipped[idx2])]
-    }, idx1 = queryHits(overlaps), idx2 = subjectHits(overlaps))
-    overlaps <- overlaps[idx_genes_match]
-  }
-
-  ## export overlap data.frame
-  if (!is.null(overlapFile) && overlapFile != "") {
-    ### create overlap_df with the names of the transcripts
-    overlap_df <- data.frame(
-      query_transcript = names(clipped)[queryHits(overlaps)],
-      subject_transcript = names(clipped)[subjectHits(overlaps)],
-      stringsAsFactors = FALSE
-    )
-
-    ### create parent directory
+  ##  Ensure that overlaps are from the same gene
+  matched_overlaps <- tibble::as_tibble(overlaps) %>% 
+    dplyr::mutate(queryTx = grlC_clipped_names[queryHits],
+                  subjectTx = grlC_clipped_names[subjectHits]) %>% 
+    dplyr::mutate(queryGene = mapTxToGene[queryTx],
+                  subjectGene = mapTxToGene[subjectTx]) %>% 
+    dplyr::filter(queryGene == subjectGene)
+  
+  ## Export overlap data.frame
+  if (!is.null(overlapFile) && overlapFile != ""){
     output_dir <- dirname(overlapFile)
     if (output_dir != "." && !dir.exists(output_dir)) {
-      dir.create(output_dir, recursive = TRUE)
+      dir.create(output_dir, recursive=TRUE)
     }
-
-    ### write in disk
-    write.csv(overlap_df, overlapFile, row.names = FALSE, quote = FALSE)
+    
+    ## Store output in disk
+    write.table(matched_overlaps, overlapFile, sep="\t", row.names=FALSE, quote=FALSE)
     message(sprintf("Post-truncation transcript overlaps exported to: %s", overlapFile))
   }
-
-  ## get duplicate indices
-  duplicates <- unique(queryHits(overlaps))
-  if (length(duplicates) > 0) {
-    clipped <- clipped[-duplicates]
+  
+  ## Remove overlaps
+  if (nrow(matched_overlaps) > 0) {
+    tx_to_remove <- unique(matched_overlaps$queryHits)
+    grlC_clipped <- grlC_clipped[-tx_to_remove]
+    message(sprintf("Removed %d duplicates.", length(tx_to_remove)))
+  } else {
+    message("No duplicated transcripts found.")
   }
-  message(sprintf("Removed %d duplicates.", length(duplicates)))
-
+  
   ############################################################################
   # Create the final exon ranges
   message("Creating exon ranges...")
 
   ## flatten with tx_id in metadata
-  grExons <- unlist(.mutateEach(clipped, transcript_id = names(clipped)))
-  names(grExons) <- NULL
+  grExons <- slot(grlC_clipped, "unlistData")
   mcols(grExons)["type"] <- "exon"
 
   ## add gene id
@@ -228,25 +226,20 @@ setMethod("truncateTxome", "TxDb", function(txdb,
   ############################################################################
   # Create the final transcript ranges
   message("Creating tx ranges...")
-  ## generate transcripts GRanges with clipped bounds
-  grTxs <- unlist(GRangesList(bplapply(clipped, .fillReduce,
-    BPPARAM = BPPARAM
-  )))
-  mcols(grTxs)["transcript_id"] <- names(grTxs)
+  grTxs <- unlist(range(grlC_clipped))
+  mcols(grTxs)["transcript_id"] <- factor(names(grlC_clipped), levels = levels(grExons$transcript_id))
   mcols(grTxs)["type"] <- "transcript"
-
+  
   ## add gene id
   mcols(grTxs)["gene_id"] <- mapTxToGene[grTxs$transcript_id]
-
+  
+  grTxs <- grTxs[order(grTxs$transcript_id)]
   message("Done.")
 
   ############################################################################
   # Create the final gene ranges
   message("Creating gene ranges...")
-  grGenes <- unlist(GRangesList(bplapply(split(grTxs, grTxs$gene_id),
-    .fillReduce,
-    BPPARAM = BPPARAM
-  )))
+  grGenes <- unlist(range(S4Vectors::split(grTxs, mcols(grTxs)$gene_id)))
   mcols(grGenes)["gene_id"] <- names(grGenes)
   mcols(grGenes)["type"] <- "gene"
   message("Done.")
@@ -254,8 +247,8 @@ setMethod("truncateTxome", "TxDb", function(txdb,
   ############################################################################
   # Generate the final TxDb object
   dfMetadata <- data.frame(
-    name = c("Truncated by", "Maximum Transcript Length", "Truncation End"),
-    value = c("txcutr", maxTxLength, txEnd)
+    name=c("Truncated by", "Maximum Transcript Length", "Truncation End"),
+    value=c("txcutr", maxTxLength, txEnd)
   )
 
   .suppressTxDbGenomeWarning(
@@ -268,104 +261,117 @@ setMethod("truncateTxome", "TxDb", function(txdb,
 
 #' Clip Transcript to Given Length
 #'
-#' Internal function for operating on individual \code{GRanges}, where ranges
-#' represent exons in a transcript. This is designed to be used in an
-#' \code{*apply} function over a \code{GRangesList} object.
+#' Internal function for operating on \code{CompressedGRangesList}, where each
+#' element represents a transcript and its exons.
 #'
-#' @param gr a \code{GRanges} object
+#' @param grl a \code{CompressedGRangesList} object
 #' @param maxTxLength a positive integer
 #' @param txEnd transcript truncation end
+#' @param BPPARAM A \linkS4class{BiocParallelParam} object for parallelization
 #'
-#' @return the clipped \code{GRanges} object
+#' @return the truncated \code{GRanges} object
 #'
-#' @importFrom GenomicRanges GRanges width strand start end intersect invertStrand
-#' @importFrom IRanges IRanges
-#'
-.clipTranscript <- function(gr, maxTxLength, txEnd) {
-  if (sum(width(gr)) <= maxTxLength) { ## already short enough
-    gr
-  } else { ## need to adjust
-    ## adjustment is directed
-    txStrand <- strand(gr)
-    virtual_txStrand <- if (txEnd == "3prime") txStrand else invertStrand(txStrand)
-
-    if (all(virtual_txStrand == "+")) {
-      ## order txs
-      idx <- order(-end(gr))
-
-      ## compute cumulative lengths
-      cumLength <- cumsum(width(gr[idx]))
-
-      ## index of exon that exceeds maximum length
-      idxLast <- min(which(cumLength > maxTxLength))
-
-      ## compute cutoff (genomic position)
-      startNew <- start(gr[idx[idxLast]]) + (cumLength[idxLast] - maxTxLength)
-
-      ## new transcript interval
-      grMask <- GRanges(seqnames(gr[1]),
-        IRanges(startNew, max(end(gr))),
-        strand = "+"
-      )
-
-      if (txEnd == "5prime") grMask <- invertStrand(grMask)
-
-      ## clip exons with interval
-      intersect(gr, grMask)
-    } else if (all(virtual_txStrand == "-")) {
-      ## order txs
-      idx <- order(start(gr))
-
-      ## compute cumulative lengths
-      cumLength <- cumsum(width(gr[idx]))
-
-      ## index of exon that exceeds maximum length
-      idxLast <- min(which(cumLength > maxTxLength))
-
-      ## compute cutoff (genomic position)
-      endNew <- end(gr[idx[idxLast]]) - (cumLength[idxLast] - maxTxLength)
-
-      ## new transcript interval
-      grMask <- GRanges(seqnames(gr[1]),
-        IRanges(min(start(gr)), endNew),
-        strand = "-"
-      )
-
-      if (txEnd == "5prime") grMask <- invertStrand(grMask)
-
-      ## clip exons with interval
-      intersect(gr, grMask)
-    } else {
-      warning("Skipping Transcript: Encountered inconsistent strand annotation!", gr)
-      gr
+#' @importFrom GenomicRanges invertStrand makeGRangesFromDataFrame seqinfo
+#' @importFrom methods slot
+#' @importFrom BiocParallel bplapply bpparam
+#' @importFrom tibble as_tibble
+#' @importFrom dplyr %>% distinct mutate ntile row_number left_join group_by group_split bind_rows arrange filter if_else
+#' 
+.clipTranscript <- function(grl, maxTxLength, txEnd, BPPARAM) {
+  # Merge all exons into a single GRanges and add the transcript ID
+  exons_gr <- slot(.mutateEach(grl, transcript_id = names(grl)), "unlistData")
+  exons_gr$transcript_id <- factor(exons_gr$transcript_id, levels = names(grl))
+  
+  # 5' truncation is the same a 3' truncation if we invert the strand
+  if(txEnd == "5prime") exons_gr <- invertStrand(exons_gr)
+  
+  # Convert GRanges into tibble and remove transcript with inconsistent strands
+  exons_df <- as_tibble(exons_gr[, "transcript_id"])
+  exons_df <- .pruneInconsistentStrand(exons_df)
+  
+  # Split tibble into batches based on the number of threads registered in
+  # BiocParallel and the strand
+  tx_to_workers <- exons_df %>% 
+    dplyr::distinct(transcript_id) %>% 
+    dplyr::mutate(worker_id = dplyr::ntile(dplyr::row_number(), BPPARAM$workers))
+  
+  exons_by_strand_workers <- exons_df %>% 
+    dplyr::left_join(tx_to_workers, by = "transcript_id", relationship = "many-to-one") %>% 
+    dplyr::group_by(worker_id, strand) %>% 
+    dplyr::group_split()
+  
+  # Apply the truncation pipeline to each group individually
+  exons_truncated_df <- bplapply(exons_by_strand_workers, function(exons_split){
+    split_strand = unique(exons_split$strand)
+    
+    if(split_strand == "+"){
+      # Truncation pipeline consist in extracting exons with a cumulative width
+      # less than the desired `maxTxLength` and then prune the following exon so
+      # that the total width per transcript is exactly `maxTxLength`.
+      exons_truncated_split <- exons_split %>% 
+        dplyr::group_by(transcript_id) %>% 
+        dplyr::arrange(-end, .by_group = TRUE) %>% 
+        dplyr::mutate(cumLength = cumsum(width)) %>% 
+        # Filter the first N + 1 exons, where N is the number of exons with cumulative width less than `maxTxLength`
+        dplyr::filter(dplyr::row_number() <= sum(cumLength < maxTxLength) + 1) %>%  
+        # Modify only the exon with a cumulative width higher than `maxTxLength`
+        dplyr::mutate(start = dplyr::if_else(cumLength > maxTxLength, start + (cumLength - maxTxLength), start)) %>%  
+        dplyr::arrange(start, .by_group = TRUE) %>% 
+        dplyr::select(-cumLength, -worker_id) %>% 
+        dplyr::ungroup() 
+    }else if(split_strand == "-"){
+      # If exons are reversed stranded, we simply need to apply the truncation
+      # to the other transcript end (same logic)
+      exons_truncated_split <- exons_split %>% 
+        dplyr::group_by(transcript_id) %>% 
+        dplyr::arrange(start, .by_group = TRUE) %>% 
+        dplyr::mutate(cumLength = cumsum(width)) %>% 
+        # Filter the first N + 1 exons, where N is the number of exons with cumulative width less than `maxTxLength`
+        dplyr::filter(dplyr::row_number() <= sum(cumLength < maxTxLength) + 1) %>%  
+        # Modify only the exon with a cumulative width higher than `maxTxLength`
+        dplyr::mutate(end = dplyr::if_else(cumLength > maxTxLength, end - (cumLength - maxTxLength), end)) %>%  
+        dplyr::arrange(start, .by_group = TRUE) %>% 
+        dplyr::select(-cumLength, -worker_id) %>% 
+        dplyr::ungroup() 
     }
-  }
+    
+    return(exons_truncated_split)
+  }, BPPARAM = BPPARAM) %>% 
+    dplyr::bind_rows() %>% 
+    dplyr::arrange(transcript_id)
+  
+  exons_truncated_gr <- makeGRangesFromDataFrame(exons_truncated_df, keep.extra.columns = T, seqinfo = seqinfo(exons_gr))
+  if(txEnd == "5prime") exons_truncated_gr <- invertStrand(exons_truncated_gr)
+  exons_truncated_gr <- sort(exons_truncated_gr)
+  
+  return(exons_truncated_gr)
 }
 
-
-#' Convert GRanges to Single Range
+#' Prune GRanges of transcripts with inconsistent strand
 #'
-#' @param gr a \code{GRanges} with ranges to be merged.
-#' @param validate logical determining whether entries should be checked for compatible
-#' seqnames and strands.
+#' Internal function operating on a \code{tibble}, with rows representing exons.
 #'
-#' @return \code{GRanges} with single interval
+#' @param exons_df a \code{tibble} of exons with \code{strand} and
+#'   \code{transcript_id} fields.
 #'
-#' @details The validation assumes seqnames and strand are \code{Rle} objects.
+#' @return \code{tibble} with inconsistent transcripts removed
 #'
-#' @importFrom GenomicRanges seqnames start end strand reduce start<- end<-
-#' @importFrom S4Vectors nrun
-.fillReduce <- function(gr, validate = TRUE) {
-  if (validate) {
-    stopifnot(
-      nrun(seqnames(gr)) == 1,
-      nrun(strand(gr)) == 1
-    )
+#' @importFrom tibble as_tibble
+#' @importFrom dplyr %>% group_by summarise n_distinct filter pull
+#' 
+.pruneInconsistentStrand <- function(exons_df){
+  # GR: Group by transcripts and filter based on the number of distinct strands.
+  multistrand_tx <- exons_df %>% 
+    dplyr::group_by(transcript_id) %>% 
+    dplyr::summarise(n = dplyr::n_distinct(strand)) %>% 
+    dplyr::filter(n > 1) %>% 
+    dplyr::pull(transcript_id)
+  
+  if(length(multistrand_tx) > 0){
+    warning("Some transcripts have inconsistend strand annotation! These will be ignored")
+    remove_tx <- unique(multistrand_tx)
+    exons_df <- exons_df %>% dplyr::filter(!transcript_id %in% remove_tx)
   }
-
-  ## TODO: Check if faster to construct new GRanges
-  ## Current implementation makes retention of seqinfo simple.
-  start(gr) <- min(start(gr))
-  end(gr) <- max(end(gr))
-  reduce(gr)
+  
+  return(exons_df)
 }

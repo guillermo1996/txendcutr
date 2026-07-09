@@ -44,7 +44,7 @@ setGeneric("generateMergeTable",
 #' txdb_w100 <- truncateTxome(txdb, maxTxLength = 100)
 #' txdb_w100
 #'
-#' @importFrom GenomicRanges mcols resize findOverlaps invertStrand
+#' @importFrom GenomicRanges mcols resize findOverlaps invertStrand strand
 #' @importFrom GenomicFeatures transcripts
 #' @importFrom AnnotationDbi metadata
 #' @importFrom methods setMethod
@@ -63,9 +63,7 @@ setMethod("generateMergeTable", "TxDb", function(txdb, minDistance = 200L) {
 
   ############################################################################
   # Merge pipeline
-  grTxs <- transcripts(txdb,
-    columns = c("gene_id", "tx_id", "tx_name")
-  )
+  grTxs <- transcripts(txdb, columns = c("gene_id", "tx_id", "tx_name"))
 
   ## Invert strand if 5' truncation
   if (txEnd == "5prime") grTxs <- invertStrand(grTxs)
@@ -107,14 +105,12 @@ setMethod("generateMergeTable", "TxDb", function(txdb, minDistance = 200L) {
   }
 
   ## pick unique out
-  groupedOverlaps <- split(overlaps, overlaps$queryHits)
-  singleOverlaps <- lapply(
-    groupedOverlaps,
-    function(df) {
-      df[with(df, order(-end_out, tx_out)), ][1, ]
-    }
-  )
-  dfMerge <- do.call(rbind, singleOverlaps)[, c("tx_in", "tx_out")]
+  dfMerge <- overlaps %>% 
+    dplyr::group_by(queryHits) %>% 
+    dplyr::arrange(-end_out, tx_out, .by_group = T) %>% 
+    dplyr::slice_head(n = 1) %>% 
+    dplyr::ungroup() %>% 
+    dplyr::select(tx_in, tx_out)
   dfMerge <- .propagateMap(dfMerge)
 
   ## include self-maps

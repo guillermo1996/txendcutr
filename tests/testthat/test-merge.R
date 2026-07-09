@@ -1,6 +1,3 @@
-library(GenomicRanges)
-library(txdbmaker)
-
 ############
 ## Mock Data
 ############
@@ -23,7 +20,7 @@ gr_contig <- GRanges(
   exon_id = c(NA, NA, "exon_1", NA, "exon_2")
 )
 
-txdb_contig <- .suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_contig, metadata = default_meta))
+txdb_contig <- txcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_contig, metadata = default_meta))
 
 ## Negative Strand
 gr_contig_neg <- GRanges(
@@ -41,7 +38,7 @@ gr_contig_neg <- GRanges(
   exon_id = c(NA, NA, "exon_1", NA, "exon_2")
 )
 
-txdb_contig_neg <- .suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_contig_neg, metadata = default_meta))
+txdb_contig_neg <- txcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_contig_neg, metadata = default_meta))
 
 ## Transitive Positive
 gr_transitive <- GRanges(
@@ -74,8 +71,8 @@ gr_transitive <- GRanges(
   exon_id = c(NA, NA, "exon_1", NA, "exon_2", NA, "exon_3")
 )
 
-txdb_transitive <- .suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_transitive, metadata = default_meta))
-txdb_transitive_neg <- .suppressTxDbGenomeWarning(makeTxDbFromGRanges(invertStrand(gr_transitive), metadata = default_meta))
+txdb_transitive <- txcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_transitive, metadata = default_meta))
+txdb_transitive_neg <- txcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(invertStrand(gr_transitive), metadata = default_meta))
 
 ## Truncation + Merge on complex transcript structure
 gr_complex <- GRanges(
@@ -128,8 +125,8 @@ gr_complex <- GRanges(
   exon_id = c(NA, NA, "exon_1-1", "exon_1-2", "exon_1-3", NA, "exon_2-1", "exon_2-2", "exon_2-3", NA, "exon_3-1", "exon_3-2", NA, NA, "exon_4-1", "exon_4-2")
 )
 
-txdb_complex <- .suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_complex))
-txdb_complex_neg <- .suppressTxDbGenomeWarning(makeTxDbFromGRanges(invertStrand(gr_complex)))
+txdb_complex <- txcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_complex))
+txdb_complex_neg <- txcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(invertStrand(gr_complex)))
 
 ########
 ## Tests
@@ -176,7 +173,11 @@ test_that("merging is transitive, positive strand", {
   n_txdb_txs <- length(transcripts(txdb_transitive))
   n_txs_in <- length(unique(df$tx_in))
   n_txs_out <- length(unique(df$tx_out))
-  tx_distal <- get_distal_tx_name(transcripts(txdb_transitive))
+  gr_debug <- transcripts(txdb_transitive)
+
+  three_prime <- ifelse(strand(gr_debug) == "-", -start(gr_debug), end(gr_debug))
+  tx_distal <- gr_debug$tx_name[which.max(three_prime)]
+
   expect_equal(n_txs_in, n_txdb_txs)
   expect_equal(n_txs_out, 1)
   expect_equal(df$tx_out, rep(tx_distal, nrow(df)))
@@ -187,7 +188,11 @@ test_that("merging is transitive, negative strand", {
   n_txdb_txs <- length(transcripts(txdb_transitive_neg))
   n_txs_in <- length(unique(df$tx_in))
   n_txs_out <- length(unique(df$tx_out))
-  tx_distal <- get_distal_tx_name(transcripts(txdb_transitive_neg))
+  gr_debug <- transcripts(txdb_transitive_neg)
+
+  three_prime <- ifelse(strand(gr_debug) == "-", -start(gr_debug), end(gr_debug))
+  tx_distal <- gr_debug$tx_name[which.max(three_prime)]
+
   expect_equal(n_txs_in, n_txdb_txs)
   expect_equal(n_txs_out, 1)
   expect_equal(df$tx_out, rep(tx_distal, nrow(df)))

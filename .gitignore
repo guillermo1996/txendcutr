@@ -2,8 +2,11 @@
 .Rhistory
 .RData
 .Ruserdata
+.Rbuildignore
 .DS_Store
 inst/doc
 *.Rproj
 vignettes/*.html
 vignettes/*.R
+outputs/
+.vscode/

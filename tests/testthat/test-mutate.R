@@ -1,6 +1,3 @@
-library(GenomicRanges)
-library(txdbmaker)
-
 ############
 ## Mock Data
 ############
@@ -21,7 +18,7 @@ gr_multi_exon <- GRanges(
   exon_id = c(NA, NA, "exon_1", "exon_2", "exon_3")
 )
 
-txdb_multi_exon <- .suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_multi_exon))
+txdb_multi_exon <- txcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_multi_exon))
 grl_multi_exon <- exonsBy(txdb_multi_exon, use.names = TRUE)
 
 gr_multi_tx <- GRanges(
@@ -39,7 +36,7 @@ gr_multi_tx <- GRanges(
   exon_id = c(NA, NA, "exon_1", NA, "exon_2")
 )
 
-txdb_multi_tx <- .suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_multi_tx))
+txdb_multi_tx <- txcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_multi_tx))
 grl_multi_tx <- exonsBy(txdb_multi_tx, use.names = TRUE)
 
 ########
@@ -47,14 +44,14 @@ grl_multi_tx <- exonsBy(txdb_multi_tx, use.names = TRUE)
 ########
 
 test_that("adds correct transcript names, multi-exon", {
-  grl <- .mutateEach(grl_multi_exon, new_col = names(grl_multi_exon))
+  grl <- txcutr:::.mutateEach(grl_multi_exon, new_col = names(grl_multi_exon))
   for (tx in names(grl)) {
     expect_setequal(grl[[tx]]$new_col, tx)
   }
 })
 
 test_that("adds correct transcript names, multi-tx", {
-  grl <- .mutateEach(grl_multi_tx, new_col = names(grl_multi_tx))
+  grl <- txcutr:::.mutateEach(grl_multi_tx, new_col = names(grl_multi_tx))
   for (tx in names(grl)) {
     expect_setequal(grl[[tx]]$new_col, tx)
   }
@@ -63,8 +60,8 @@ test_that("adds correct transcript names, multi-tx", {
 test_that("SimpleGRangesList and CompressedGRangesList match", {
   sgrl_in <- as(grl_multi_tx, "SimpleGRangesList")
   cgrl_in <- as(grl_multi_tx, "CompressedGRangesList")
-  sgrl_out <- .mutateEach(sgrl_in, new_col = names(sgrl_in))
-  cgrl_out <- .mutateEach(cgrl_in, new_col = names(cgrl_in))
+  sgrl_out <- txcutr:::.mutateEach(sgrl_in, new_col = names(sgrl_in))
+  cgrl_out <- txcutr:::.mutateEach(cgrl_in, new_col = names(cgrl_in))
   expect_equal(sgrl_out, cgrl_out)
 })
 
@@ -72,7 +69,7 @@ test_that("incorrect assignment lengths are caught", {
   bad_col_long <- c(0, seq_along(names(grl_multi_tx)))
   bad_col_short <- seq_along(names(grl_multi_tx))[-1]
   empty_col <- numeric(0)
-  expect_error(.mutateEach(grl_multi_tx, new_col = bad_col_long))
-  expect_error(.mutateEach(grl_multi_tx, new_col = bad_col_short))
-  expect_error(.mutateEach(grl_multi_tx, new_col = empty_col))
+  expect_error(txcutr:::.mutateEach(grl_multi_tx, new_col = bad_col_long))
+  expect_error(txcutr:::.mutateEach(grl_multi_tx, new_col = bad_col_short))
+  expect_error(txcutr:::.mutateEach(grl_multi_tx, new_col = empty_col))
 })

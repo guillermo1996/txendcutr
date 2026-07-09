@@ -1,6 +1,3 @@
-library(GenomicRanges)
-library(txdbmaker)
-
 ############
 ## Mock Data
 ############
@@ -70,7 +67,7 @@ gr_collapse_test <- GRanges(
   )
 )
 
-txdb_collapse_test <- .suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_collapse_test))
+txdb_collapse_test <- txcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_collapse_test))
 
 ## Three transcripts with identical boundaries after truncation but different
 ## internal exon structure
@@ -124,7 +121,7 @@ gr_exon_structure_test <- GRanges(
   )
 )
 
-txdb_exon_structure_test <- .suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_exon_structure_test))
+txdb_exon_structure_test <- txcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_exon_structure_test))
 
 ########
 ## Tests
@@ -134,12 +131,12 @@ test_that("identical transcripts are collapsed after truncation, positive strand
   LENGTHS_TO_TEST <- c(100, 500)
 
   for (n in LENGTHS_TO_TEST) {
-    temp_file <- withr::local_tempfile(fileext = ".csv")
+    temp_file <- withr::local_tempfile(fileext = ".tsv")
     txdb_res <- truncate3primeTxome(txdb_collapse_test, maxTxLength = n, overlapFile = temp_file, quiet = T)
 
     ## correct overlaps removal
-    test_overlap <- data.frame(query_transcript = "tx_2", subject_transcript = "tx_1")
-    read_overlap <- read.table(temp_file, sep = ",", header = T)[, c("query_transcript", "subject_transcript")]
+    test_overlap <- data.frame(queryTx = "tx_2", subjectTx = "tx_1")
+    read_overlap <- read.table(temp_file, sep = "\t", header = T)[, c("queryTx", "subjectTx")]
 
     expect_equal(test_overlap, read_overlap)
     expect_equal(nrow(read_overlap), 1)
@@ -150,12 +147,12 @@ test_that("identical transcripts are collapsed after truncation, positive strand
   LENGTHS_TO_TEST <- c(100, 500)
 
   for (n in LENGTHS_TO_TEST) {
-    temp_file <- withr::local_tempfile(fileext = ".csv")
+    temp_file <- withr::local_tempfile(fileext = ".tsv")
     txdb_res <- truncate5primeTxome(txdb_collapse_test, maxTxLength = n, overlapFile = temp_file, quiet = T)
 
     ## correct overlaps removal
-    test_overlap <- data.frame(query_transcript = logical(0), subject_transcript = logical(0))
-    read_overlap <- read.table(temp_file, sep = ",", header = T)[, c("query_transcript", "subject_transcript")]
+    test_overlap <- data.frame(queryTx = logical(0), subjectTx = logical(0))
+    read_overlap <- read.table(temp_file, sep = "\t", header = T)[, c("queryTx", "subjectTx")]
 
     expect_equal(test_overlap, read_overlap)
     expect_equal(nrow(read_overlap), 0)
@@ -166,20 +163,20 @@ test_that("transcripts with same coordinates but different exon structure", {
   LENGTHS_TO_TEST <- c(100, 500)
 
   for (n in LENGTHS_TO_TEST) {
-    temp_file <- withr::local_tempfile(fileext = ".csv")
+    temp_file <- withr::local_tempfile(fileext = ".tsv")
     txdb_res <- truncate3primeTxome(txdb_exon_structure_test, maxTxLength = n, overlapFile = temp_file, quiet = TRUE)
 
     # Before truncation: 3 transcripts with different exon structures
     expect_equal(length(transcripts(txdb_exon_structure_test)), 3)
 
     # Read overlap file
-    read_overlap <- read.table(temp_file, sep = ",", header = TRUE)[, c("query_transcript", "subject_transcript")]
+    read_overlap <- read.table(temp_file, sep = "\t", header = TRUE)[, c("queryTx", "subjectTx")]
 
     # Should detect 3 overlaps (tx_2 vs tx_1, tx_3 vs tx_1 and tx_3 vs tx_2)
     expect_equal(nrow(read_overlap), 3)
 
     # All three transcript IDs should appear in the overlap file
-    all_tx_in_overlaps <- unique(c(read_overlap$query_transcript, read_overlap$subject_transcript))
+    all_tx_in_overlaps <- unique(c(read_overlap$queryTx, read_overlap$subjectTx))
     expect_setequal(all_tx_in_overlaps, c("tx_1", "tx_2", "tx_3"))
 
     # After collapsing, should have only 1 transcript remaining

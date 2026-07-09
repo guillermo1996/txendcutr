@@ -1,6 +1,3 @@
-library(GenomicRanges)
-library(txdbmaker)
-
 ############
 ## Mock Data
 ############
@@ -21,8 +18,8 @@ gr_contig <- GRanges(
   exon_id = c(NA, NA, "exon_1", NA, "exon_2")
 )
 
-txdb_contig <- .suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_contig))
-txdb_contig_inv <- .suppressTxDbGenomeWarning(makeTxDbFromGRanges(invertStrand(gr_contig)))
+txdb_contig <- txcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_contig))
+txdb_contig_inv <- txcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(invertStrand(gr_contig)))
 
 ## Negative Strand
 gr_contig_neg <- GRanges(
@@ -40,8 +37,8 @@ gr_contig_neg <- GRanges(
   exon_id = c(NA, NA, "exon_1", NA, "exon_2")
 )
 
-txdb_contig_neg <- .suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_contig_neg))
-txdb_contig_neg_inv <- .suppressTxDbGenomeWarning(makeTxDbFromGRanges(invertStrand(gr_contig_neg)))
+txdb_contig_neg <- txcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_contig_neg))
+txdb_contig_neg_inv <- txcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(invertStrand(gr_contig_neg)))
 
 
 ## Overlapping Genes
@@ -78,7 +75,7 @@ gr_multigene <- GRanges(
   )
 )
 
-txdb_multigene <- .suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_multigene))
+txdb_multigene <- txcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_multigene))
 
 ########
 ## Tests
