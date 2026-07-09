@@ -20,7 +20,7 @@ gr_contig <- GRanges(
   exon_id = c(NA, NA, "exon_1", NA, "exon_2")
 )
 
-txdb_contig <- txcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_contig, metadata = default_meta))
+txdb_contig <- txendcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_contig, metadata = default_meta))
 
 ## Negative Strand
 gr_contig_neg <- GRanges(
@@ -38,7 +38,7 @@ gr_contig_neg <- GRanges(
   exon_id = c(NA, NA, "exon_1", NA, "exon_2")
 )
 
-txdb_contig_neg <- txcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_contig_neg, metadata = default_meta))
+txdb_contig_neg <- txendcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_contig_neg, metadata = default_meta))
 
 ## Transitive Positive
 gr_transitive <- GRanges(
@@ -71,8 +71,8 @@ gr_transitive <- GRanges(
   exon_id = c(NA, NA, "exon_1", NA, "exon_2", NA, "exon_3")
 )
 
-txdb_transitive <- txcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_transitive, metadata = default_meta))
-txdb_transitive_neg <- txcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(invertStrand(gr_transitive), metadata = default_meta))
+txdb_transitive <- txendcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_transitive, metadata = default_meta))
+txdb_transitive_neg <- txendcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(invertStrand(gr_transitive), metadata = default_meta))
 
 ## Truncation + Merge on complex transcript structure
 gr_complex <- GRanges(
@@ -125,8 +125,8 @@ gr_complex <- GRanges(
   exon_id = c(NA, NA, "exon_1-1", "exon_1-2", "exon_1-3", NA, "exon_2-1", "exon_2-2", "exon_2-3", NA, "exon_3-1", "exon_3-2", NA, NA, "exon_4-1", "exon_4-2")
 )
 
-txdb_complex <- txcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_complex))
-txdb_complex_neg <- txcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(invertStrand(gr_complex)))
+txdb_complex <- txendcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_complex))
+txdb_complex_neg <- txendcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(invertStrand(gr_complex)))
 
 ########
 ## Tests

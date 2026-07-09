@@ -1,0 +1,163 @@
+## GitHub Actions workflow for R CMD check + test coverage, adapted from the
+## biocthis-generated workflow used by the upstream txcutr package
+## (https://github.com/mfansler/txcutr/blob/bioc-check/.github/workflows/check-bioc.yml).
+## Simplified for txendcutr: drops RUnit, pkgdown deployment, and Docker
+## image publishing, none of which are set up for this fork.
+
+on:
+  push:
+  pull_request:
+
+name: R-CMD-check-bioc
+
+jobs:
+  build-check:
+    runs-on: ${{ matrix.config.os }}
+    name: ${{ matrix.config.os }} (${{ matrix.config.r }})
+    container: ${{ matrix.config.cont }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - { os: ubuntu-latest, r: '4.5', bioc: '3.22', cont: "bioconductor/bioconductor_docker:devel", rspm: "https://packagemanager.rstudio.com/cran/__linux__/jammy/latest" }
+          - { os: macOS-latest, r: '4.5', bioc: '3.22' }
+          - { os: windows-latest, r: '4.5', bioc: '3.22' }
+
+    env:
+      R_REMOTES_NO_ERRORS_FROM_WARNINGS: true
+      RSPM: ${{ matrix.config.rspm }}
+      NOT_CRAN: true
+      TZ: UTC
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Set R Library home on Linux
+        if: runner.os == 'Linux'
+        run: |
+          mkdir /__w/_temp/Library
+          echo ".libPaths('/__w/_temp/Library')" > ~/.Rprofile
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup R from r-lib
+        if: runner.os != 'Linux'
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ matrix.config.r }}
+
+      - name: Setup pandoc from r-lib
+        if: runner.os != 'Linux'
+        uses: r-lib/actions/setup-pandoc@v2
+
+      - name: Query dependencies
+        run: |
+          install.packages('remotes')
+          saveRDS(remotes::dev_package_deps(dependencies = TRUE), ".github/depends.Rds", version = 2)
+        shell: Rscript {0}
+
+      - name: Restore R package cache
+        if: "!contains(github.event.head_commit.message, '/nocache') && runner.os != 'Linux'"
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.R_LIBS_USER }}
+          key: cache-v1-${{ runner.os }}-biocversion-devel-r-4.5-${{ hashFiles('.github/depends.Rds') }}
+          restore-keys: cache-v1-${{ runner.os }}-biocversion-devel-r-4.5-
+
+      - name: Cache R packages on Linux
+        if: "!contains(github.event.head_commit.message, '/nocache') && runner.os == 'Linux'"
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/work/_temp/Library
+          key: cache-v1-${{ runner.os }}-biocversion-devel-r-4.5-${{ hashFiles('.github/depends.Rds') }}
+          restore-keys: cache-v1-${{ runner.os }}-biocversion-devel-r-4.5-
+
+      - name: Install macOS system dependencies
+        if: matrix.config.os == 'macOS-latest'
+        run: |
+          brew install libxml2 harfbuzz fribidi libgit2
+          echo "XML_CONFIG=/usr/local/opt/libxml2/bin/xml2-config" >> $GITHUB_ENV
+
+      - name: Install BiocManager
+        run: |
+          message(paste('****', Sys.time(), 'installing BiocManager ****'))
+          remotes::install_cran("BiocManager")
+        shell: Rscript {0}
+
+      - name: Set BiocVersion
+        run: |
+          BiocManager::install(version = "${{ matrix.config.bioc }}", ask = FALSE, force = TRUE)
+        shell: Rscript {0}
+
+      - name: Install dependencies pass 1
+        run: |
+          message(paste('****', Sys.time(), 'installing rcmdcheck and BiocCheck ****'))
+          install.packages(c("rcmdcheck", "BiocCheck"), repos = BiocManager::repositories())
+
+          message(paste('****', Sys.time(), 'pass number 1 at installing dependencies: local dependencies ****'))
+          remotes::install_local(dependencies = TRUE, repos = BiocManager::repositories(), build_vignettes = FALSE, upgrade = TRUE)
+        continue-on-error: true
+        shell: Rscript {0}
+
+      - name: Install dependencies pass 2
+        run: |
+          message(paste('****', Sys.time(), 'pass number 2 at installing dependencies: any remaining dependencies ****'))
+          remotes::install_local(dependencies = TRUE, repos = BiocManager::repositories(), build_vignettes = TRUE, upgrade = TRUE, force = TRUE)
+        shell: Rscript {0}
+
+      - name: Install covr
+        if: runner.os == 'Linux'
+        run: remotes::install_cran("covr")
+        shell: Rscript {0}
+
+      - name: Session info
+        run: |
+          options(width = 100)
+          pkgs <- installed.packages()[, "Package"]
+          sessioninfo::session_info(pkgs, include_base = TRUE)
+        shell: Rscript {0}
+
+      - name: Run CMD check
+        env:
+          _R_CHECK_CRAN_INCOMING_: false
+          DISPLAY: 99.0
+        run: |
+          options(crayon.enabled = TRUE)
+          rcmdcheck::rcmdcheck(
+              args = c("--no-manual", "--timings"),
+              build_args = c("--no-manual", "--keep-empty-dirs", "--no-resave-data"),
+              error_on = "warning",
+              check_dir = "check"
+          )
+        shell: Rscript {0}
+
+      - name: Reveal testthat details
+        run: find . -name testthat.Rout -exec cat '{}' ';'
+
+      - name: Run BiocCheck
+        env:
+          DISPLAY: 99.0
+        run: |
+          BiocCheck::BiocCheck(
+              dir('check', 'tar.gz$', full.names = TRUE),
+              `quit-with-status` = TRUE,
+              `no-check-R-ver` = TRUE,
+              `no-check-bioc-help` = TRUE
+          )
+        shell: Rscript {0}
+
+      - name: Test coverage
+        if: runner.os == 'Linux'
+        run: covr::codecov(coverage = covr::package_coverage(type = "all"), token = Sys.getenv("CODECOV_TOKEN"))
+        shell: Rscript {0}
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload check results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ runner.os }}-biocversion-devel-r-4.5-results
+          path: check

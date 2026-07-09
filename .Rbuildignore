@@ -3,3 +3,4 @@
 ^conda-recipe$
 ^\.github$
 ^README\.Rmd$
+^\.vscode$

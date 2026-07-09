@@ -35,7 +35,7 @@ gr_transitive <- GRanges(
   exon_id = c(NA, NA, "exon_1", NA, "exon_2", NA, "exon_3")
 )
 
-txdb_transitive <- txcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_transitive, metadata = default_meta))
+txdb_transitive <- txendcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_transitive, metadata = default_meta))
 
 ########
 ## Tests

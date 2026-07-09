@@ -1,15 +1,13 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# txcutr
+# txendcutr
 
 <!-- badges: start -->
 
 [![R build
-status](https://github.com/mfansler/txcutr/workflows/R-CMD-check-bioc/badge.svg)](https://github.com/mfansler/txcutr/actions)
-[![codecov](https://codecov.io/gh/mfansler/txcutr/branch/bioc-check/graph/badge.svg?token=CGGZP68G67)](https://codecov.io/gh/mfansler/txcutr)
-[![Anaconda-Server
-Badge](https://anaconda.org/bioconda/bioconductor-txcutr/badges/version.svg)](https://anaconda.org/bioconda/bioconductor-txcutr)
+status](https://github.com/guillermo1996/txendcutr/workflows/R-CMD-check-bioc/badge.svg)](https://github.com/guillermo1996/txendcutr/actions)
+[![codecov](https://codecov.io/gh/guillermo1996/txendcutr/branch/txendcutr-release/graph/badge.svg)](https://codecov.io/gh/guillermo1996/txendcutr)
 <!-- badges: end -->
 
 ## Overview
@@ -17,61 +15,54 @@ Badge](https://anaconda.org/bioconda/bioconductor-txcutr/badges/version.svg)](ht
 Various mRNA sequencing library preparation methods generate sequencing
 reads from the transcript ends. Quantification of isoform usage can be
 improved by using truncated versions of transcriptome annotations when
-assigning such reads to isoforms. The `txcutr` package implements some
-convenience methods for readily generating such truncated annotations
-from either their 5’ or 3’ transcript ends and their corresponding
-sequences.
+assigning such reads to isoforms. The `txendcutr` package implements
+some convenience methods for readily generating such truncated
+annotations from either their 5’ or 3’ transcript ends and their
+corresponding sequences.
+
+`txendcutr` is a standalone fork of
+[`txcutr`](https://github.com/mfansler/txcutr), maintained independently
+of the upstream Bioconductor package. See [Differences from
+`txcutr`](#differences-from-txcutr) below for what has changed.
 
 ## Installation instructions
 
-### Bioconductor
-
-Get the latest stable `R` release from
-[CRAN](http://cran.r-project.org/). Then install `txcutr` using from
-[Bioconductor](http://bioconductor.org/) the following code:
+`txendcutr` is not published on Bioconductor or CRAN. Install it
+directly from GitHub. Get the latest stable `R` release from
+[CRAN](http://cran.r-project.org/), then install `txendcutr` with:
 
 ``` r
 if (!requireNamespace("BiocManager", quietly = TRUE)) {
     install.packages("BiocManager")
 }
 
-BiocManager::install("txcutr")
+## BiocManager::install() also installs from GitHub, and correctly
+## resolves this package's Bioconductor dependencies
+BiocManager::install("guillermo1996/txendcutr")
 ```
 
-or the development version with:
+or, equivalently, with `remotes`:
 
 ``` r
-# The following initializes usage of Bioc devel
-BiocManager::install(version='devel')
+if (!requireNamespace("remotes", quietly = TRUE)) {
+    install.packages("remotes")
+}
 
-BiocManager::install("txcutr")
+remotes::install_github("guillermo1996/txendcutr")
 ```
-
-### Conda
-
-Users managing R environments with Conda can install the package with:
-
-**Conda**
-
-``` bash
-conda install -c conda-forge -c bioconda bioconductor-txcutr
-```
-
-We strongly encourage users to create dedicated R environments. **Do not
-install this in your *base* environment!**
 
 ## Example
 
-A typical workflow for `txcutr` involves
+A typical workflow for `txendcutr` involves
 
-- loading an existing annotation as `TxDb` object
+- loading an existing annotation as a `TxDb` object
 - truncating the annotation from the 3’ or 5’ end
 - exporting the truncated annotation (GTF)
 - exporting supporting files (FASTA, merge TSV)
 
 ``` r
 library(rtracklayer)
-library(txcutr)
+library(txendcutr)
 library(BSgenome.Hsapiens.UCSC.hg38)
 
 ## load human genome
@@ -80,80 +71,119 @@ hg38 <- BSgenome.Hsapiens.UCSC.hg38
 ## load human GENCODE annotation
 txdb <- makeTxDbFromGFF("gencode.v38.annotaton.gtf.gz", organism="Homo sapiens")
 
-## truncate to maximum of 500 nts
-txdb_w500 <- truncate3primeTxome(txdb, maxTxLength=500) # use `truncate5primeTxome` for 5' truncation
+## truncate to maximum of 500 nts from the 3' end
+txdb_w500 <- truncate3primeTxome(txdb, maxTxLength=500)
+
+## ...or from the 5' end
+txdb_5p_w500 <- truncate5primeTxome(txdb, maxTxLength=500)
 
 ## export annotation
-exportGTF(txdb_w500, file="gencode.v38.txcutr_w500.gtf.gz")
+exportGTF(txdb_w500, file="gencode.v38.txendcutr_w500.gtf.gz")
 
 ## export FASTA
-exportFASTA(txdb_w500, genome=hg38, file="gencode.v38.txcutr_w500.fa.gz")
+exportFASTA(txdb_w500, genome=hg38, file="gencode.v38.txendcutr_w500.fa.gz")
 
 ## export merge-table
 exportMergeTable(txdb_w500, minDistance=200,
-                 file="gencode.v38.txcutr_w500.merge.tsv.gz")
+                 file="gencode.v38.txendcutr_w500.merge.tsv.gz")
 ```
+
+## Differences from `txcutr`
+
+`txendcutr` began as a fork of
+[`mfansler/txcutr`](https://github.com/mfansler/txcutr) and has since
+diverged as a standalone package. Key changes:
+
+- **Native 5’ truncation.** Upstream `txcutr` only truncates from the 3’
+  end. `txendcutr` generalizes `truncateTxome()` with a `txEnd` argument
+  (`"3prime"` or `"5prime"`), and adds `truncate3primeTxome()` /
+  `truncate5primeTxome()` convenience wrappers (each with a `quiet`
+  option to suppress progress messages).
+- **Overlap export.** `truncateTxome()` (and both wrappers) accept an
+  `overlapFile` argument to export a TSV of transcript pairs that were
+  collapsed as duplicates during truncation, for auditing and debugging.
+- **Faster truncation pipeline.** The internal clipping step no longer
+  schedules one `BiocParallel` task per transcript; transcripts are now
+  batched across workers and processed with a vectorized `dplyr`
+  pipeline, which is substantially faster on large transcriptomes.
 
 ## Citation
 
-Below is the citation output from using `citation('txcutr')` in R.
+`txendcutr` is a derivative work, built directly on the methodology and
+original implementation of
+[`txcutr`](https://github.com/mfansler/txcutr) by Mervin Fansler. **If
+you use `txendcutr`, please cite both packages.**
+
+Below is the citation output from using `citation('txendcutr')` in R.
 Please run this yourself to check for any updates on how to cite
-**txcutr**.
+**txendcutr**.
 
 ``` r
-print(citation('txcutr'), bibtex = TRUE)
-#> To cite package 'txcutr' in publications use:
+print(citation('txendcutr'), bibtex = TRUE)
+#> To cite package 'txendcutr' in publications use:
 #> 
-#>   Fansler M (2025). _txcutr: Transcriptome CUTteR_.
-#>   doi:10.18129/B9.bioc.txcutr
-#>   <https://doi.org/10.18129/B9.bioc.txcutr>, R package version 1.16.0,
-#>   <https://bioconductor.org/packages/txcutr>.
+#>   Rocamora Pérez G, Fansler M (2026). _txendcutr: Transcriptome CUTteR
+#>   with 5' and 3' End Support_. R package version 1.0.0,
+#>   <https://github.com/guillermo1996/txendcutr>.
 #> 
 #> A BibTeX entry for LaTeX users is
 #> 
 #>   @Manual{,
-#>     title = {txcutr: Transcriptome CUTteR},
-#>     author = {Mervin Fansler},
-#>     year = {2025},
-#>     note = {R package version 1.16.0},
-#>     url = {https://bioconductor.org/packages/txcutr},
-#>     doi = {10.18129/B9.bioc.txcutr},
+#>     title = {txendcutr: Transcriptome CUTteR with 5' and 3' End Support},
+#>     author = {Guillermo {Rocamora Pérez} and Mervin Fansler},
+#>     year = {2026},
+#>     note = {R package version 1.0.0},
+#>     url = {https://github.com/guillermo1996/txendcutr},
 #>   }
 ```
 
-Please note that the `txcutr` was only made possible thanks to many
-other R and bioinformatics software authors, which are cited either in
-the vignettes and/or the paper(s) describing this package.
+Please also cite the original `txcutr` package, without which this
+project would not exist:
+
+    #> Fansler M (2025). _txcutr: Transcriptome CUTteR_. R package version
+    #> 1.15.2, <https://github.com/mfansler/txcutr>.
+    #> 
+    #> A BibTeX entry for LaTeX users is
+    #> @Manual{,
+    #>   title = {txcutr: Transcriptome CUTteR},
+    #>   author = {Mervin Fansler},
+    #>   year = {2025},
+    #>   note = {R package version 1.15.2},
+    #>   url = {https://github.com/mfansler/txcutr},
+    #> }
+
+Note that `txendcutr` was only made possible thanks to Mervin Fansler’s
+original work on `txcutr`, as well as many other R and bioinformatics
+software authors, which are cited either in the vignettes and/or the
+paper(s) describing this package.
 
 ## Code of Conduct
 
-Please note that the `txcutr` project is released with a [Contributor
+Please note that the `txendcutr` project is released with a [Contributor
 Code of Conduct](http://bioconductor.org/about/code-of-conduct/). By
 contributing to this project, you agree to abide by its terms.
 
 ## Development tools
 
 - Continuous code testing is possible thanks to [GitHub
-  actions](https://www.tidyverse.org/blog/2020/04/usethis-1-6-0/)
-  through *[usethis](https://CRAN.R-project.org/package=usethis)*,
-  *[remotes](https://CRAN.R-project.org/package=remotes)*, and
-  *[rcmdcheck](https://CRAN.R-project.org/package=rcmdcheck)* customized
-  to use [Bioconductor’s docker
+  Actions](https://github.com/guillermo1996/txendcutr/actions), running
+  on [Bioconductor’s Docker
   containers](https://www.bioconductor.org/help/docker/) and
-  *[BiocCheck](https://bioconductor.org/packages/3.22/BiocCheck)*.
+  *[BiocCheck](https://bioconductor.org/packages/3.23/BiocCheck)*,
+  adapted from the workflow originally generated by
+  *[biocthis](https://bioconductor.org/packages/3.23/biocthis)* for
+  upstream `txcutr`.
 - Code coverage assessment is possible thanks to
-  [codecov](https://codecov.io/gh) and
+  [codecov](https://codecov.io/gh/guillermo1996/txendcutr) and
   *[covr](https://CRAN.R-project.org/package=covr)*.
-- The [documentation website](http://mfansler.github.io/txcutr) is
-  automatically updated thanks to
-  *[pkgdown](https://CRAN.R-project.org/package=pkgdown)*.
-- The code is styled automatically thanks to
-  *[styler](https://CRAN.R-project.org/package=styler)*.
 - The documentation is formatted thanks to
   *[devtools](https://CRAN.R-project.org/package=devtools)* and
   *[roxygen2](https://CRAN.R-project.org/package=roxygen2)*.
+- Unit testing is powered by
+  *[testthat](https://CRAN.R-project.org/package=testthat)* (3rd
+  edition).
 
-For more details, check the `dev` directory.
-
-This package was developed using
-*[biocthis](https://bioconductor.org/packages/3.22/biocthis)*.
+This package originates from Mervin Fansler’s `txcutr`; see the
+[upstream repository](https://github.com/mfansler/txcutr) for its own,
+separately maintained development infrastructure (including a `pkgdown`
+documentation site).

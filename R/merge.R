@@ -49,12 +49,13 @@ setGeneric("generateMergeTable",
 #' @importFrom AnnotationDbi metadata
 #' @importFrom methods setMethod
 #' @importFrom stats setNames
+#' @importFrom dplyr %>% group_by arrange slice_head ungroup
 #' @export
 setMethod("generateMergeTable", "TxDb", function(txdb, minDistance = 200L) {
   ############################################################################
   # Extract txEnd from txdb metadata
   if (!"Truncation End" %in% metadata(txdb)$name) {
-    warning("'Truncation End' parameter not found in the TxDb metadata. Defaults to '3prime'. Was this object created with txcutr::truncateTxome?")
+    warning("'Truncation End' parameter not found in the TxDb metadata. Defaults to '3prime'. Was this object created with txendcutr::truncateTxome?")
     txEnd <- "3prime"
   } else {
     txEnd <- metadata(txdb)[metadata(txdb)$name == "Truncation End", "value"]

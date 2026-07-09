@@ -32,7 +32,7 @@
 #' @importFrom BiocGenerics which paste
 #' @importFrom S4Vectors mcols<-
 #' @export
-exportGTF <- function (txdb, file, source="txcutr") {
+exportGTF <- function (txdb, file, source="txendcutr") {
     grl <- txdbToGRangesList(txdb)
 
     ## update gene fields

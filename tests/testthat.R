@@ -1,4 +1,4 @@
 library(testthat)
-library(txcutr)
+library(txendcutr)
 
-test_check("txcutr")
+test_check("txendcutr")

@@ -1,12 +1,15 @@
 ---
-title: "Introduction to txcutr"
-author: 
+title: "Introduction to txendcutr"
+author:
+  - name: Guillermo Rocamora Pérez
+    email: guillermorocamora@gmail.com
   - name: Mervin M Fansler
     affiliation:
     - Tri-Institutional Training Program in Computational Biology and Medicine, Weill Cornell Graduate College, New York 10021, NY, USA
     - Cancer Biology and Genetics Program, Memorial Sloan Kettering Cancer Center, New York, NY 10065, USA
     email: mef3005@med.cornell.edu
-output: 
+    comment: "Original author of txcutr, from which this package is forked"
+output:
   BiocStyle::html_document:
     self_contained: yes
     toc: true
@@ -14,11 +17,11 @@ output:
     toc_depth: 2
     code_folding: show
 date: "`r doc_date()`"
-package: "`r pkg_ver('txcutr')`"
+package: "`r pkg_ver('txendcutr')`"
 vignette: >
-  %\VignetteIndexEntry{Introduction to txcutr}
+  %\VignetteIndexEntry{Introduction to txendcutr}
   %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}  
+  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r setup, include = FALSE}
@@ -46,7 +49,7 @@ bib <- c(
     rmarkdown = citation("rmarkdown")[1],
     sessioninfo = citation("sessioninfo")[1],
     testthat = citation("testthat")[1],
-    txcutr = citation("txcutr")[1]
+    txendcutr = citation("txendcutr")[1]
 )
 ```
 
@@ -56,39 +59,39 @@ bib <- c(
 
 Some RNA-sequencing library preparations generate sequencing reads from specific locations in transcripts. For example, 3'-end tag methods, which include methods like Lexogen's Quant-Seq or 10X's Chromium Single Cell 3', generate reads from the 3' ends of transcripts. For applications interested in quantifying alternative cleavage site usage, using a truncated form of transcriptome annotation can help simplify downstream analysis and, in some pipelines, provide for more accurate estimates. This package implements methods to simplify the generation of such truncated annotations.
 
-## Install `txcutr`
+`txendcutr` is a standalone fork of [`txcutr`](https://github.com/mfansler/txcutr) that adds 5' truncation support, an optimized truncation pipeline, and an expanded test suite. See the package `README` for a full list of differences from upstream `txcutr`.
 
-`R` is an open-source statistical environment which can be easily modified to enhance its functionality via packages. `r Biocpkg("txcutr")` is a `R` package available via the [Bioconductor](http://bioconductor.org) repository for packages. `R` can be installed on any operating system from [CRAN](https://cran.r-project.org/) after which you can install `r Biocpkg("txcutr")` by using the following commands in your `R` session:
+## Install `txendcutr`
+
+`R` is an open-source statistical environment which can be easily modified to enhance its functionality via packages. `txendcutr` is not published on Bioconductor or CRAN; it is distributed as a GitHub package built on top of the Bioconductor infrastructure. `R` can be installed on any operating system from [CRAN](https://cran.r-project.org/), after which you can install `txendcutr` by using the following commands in your `R` session:
 
 ```{r "install", eval = FALSE}
 if (!requireNamespace("BiocManager", quietly = TRUE)) {
       install.packages("BiocManager")
   }
 
-BiocManager::install("txcutr")
-
-## Check that you have a valid Bioconductor installation
-BiocManager::valid()
+## installs from GitHub, resolving Bioconductor dependencies correctly
+BiocManager::install("guillermo1996/txendcutr")
 ```
 
 ## Required Background
 
-`r Biocpkg("txcutr")` is based on many other packages and in particular on those that have implemented the infrastructure needed for dealing with transcriptome annotations. That is, packages like `r Biocpkg("GenomicRanges")` and `r Biocpkg("GenomicFeatures")`. While we anticipate most use cases for `txcutr` to not require manipulating `GRanges` or `TxDb` objects directly, it would be beneficial to be familiar with the vignettes provided in these packages.
+`txendcutr` is based on many other packages and in particular on those that have implemented the infrastructure needed for dealing with transcriptome annotations. That is, packages like `r Biocpkg("GenomicRanges")` and `r Biocpkg("GenomicFeatures")`. While we anticipate most use cases for `txendcutr` to not require manipulating `GRanges` or `TxDb` objects directly, it would be beneficial to be familiar with the vignettes provided in these packages.
 
 ## Asking for Help
 
-As package developers, we try to explain clearly how to use our packages and in which order to use the functions. But `R` and `Bioconductor` have a steep learning curve so it is critical to learn where to ask for help. We would like to highlight the [Bioconductor support site](https://support.bioconductor.org/) as the main resource for getting help: remember to use the `txcutr` tag and check [any previous posts](https://support.bioconductor.org/t/txcutr/). Other alternatives are available such as creating GitHub issues and tweeting. However, please note that if you want to receive help you should adhere to the [posting guidelines](http://www.bioconductor.org/help/support/posting-guide/). It is particularly critical that you provide a small reproducible example and your session information so package developers can track down the source of the error.
+As package developers, we try to explain clearly how to use our packages and in which order to use the functions. But `R` and `Bioconductor` have a steep learning curve so it is critical to learn where to ask for help. For `txendcutr`-specific questions, bugs, or feature requests, please use the [GitHub issue tracker](https://github.com/guillermo1996/txendcutr/issues). For general questions about the underlying Bioconductor infrastructure (`GenomicRanges`, `GenomicFeatures`, `TxDb` objects, etc.), the [Bioconductor support site](https://support.bioconductor.org/) is a great resource. It is particularly critical that you provide a small reproducible example and your session information so package developers can track down the source of the error.
 
-## Citing `txcutr`
+## Citing `txendcutr`
 
-We hope that `r Biocpkg("txcutr")` will be useful for your research. Please use the following information to cite the package and the overall approach. Thank you!
+We hope that `txendcutr` will be useful for your research. Please use the following information to cite the package and the overall approach. Thank you!
 
 ```{r "citation"}
 ## Citation info
-citation("txcutr")
+citation("txendcutr")
 ```
 
-# Quick Start to Using `txcutr`
+# Quick Start to Using `txendcutr`
 
 ## Starting from TxDb Objects
 
@@ -109,13 +112,13 @@ seqlevels(txdb) <- "chrI"
 transcriptLengths(txdb)[1:10,]
 ```
 
-As seen from the above output, the transcript lengths are variable, but in a 3'-end tag-based RNA-sequencing library, we expect reads to only come from a narrow region at the 3' end. We can use the methods in the `r Biocpkg("txcutr")` package to restrict the annotation to that region for each transcript. 
+As seen from the above output, the transcript lengths are variable, but in a 3'-end tag-based RNA-sequencing library, we expect reads to only come from a narrow region at the 3' end. We can use the methods in the `txendcutr` package to restrict the annotation to that region for each transcript. 
 
 ### Transcriptome Truncation
 Let's use the `truncateTxome` method to restrict transcripts to their last 500 nucleotides (nts).
 
 ```{r "truncate_sgd"}
-library(txcutr)
+library(txendcutr)
 
 txdb_w500 <- truncateTxome(txdb, maxTxLength=500)
 
@@ -124,11 +127,27 @@ transcriptLengths(txdb_w500)[1:10,]
 
 Observe how the all transcripts that were previously longer than 500 nts are now exactly 500 nts. Also, any transcripts that were already short enough remain unchanged.
 
+By default, `truncateTxome` keeps the last (3') portion of each transcript, which suits 3'-end tag sequencing protocols. For protocols that instead read from the 5' end, `txendcutr` provides `truncate5primeTxome` as convenience wrappers around `truncateTxome`:
+
+```{r "truncate_sgd_5prime"}
+txdb_5p_w500 <- truncate5primeTxome(txdb, maxTxLength=500)
+
+transcriptLengths(txdb_5p_w500)[1:10,]
+```
+
+Both wrappers accept a `quiet` argument to suppress progress messages, and an `overlapFile` argument to export a TSV listing which transcripts were collapsed as duplicates during truncation (see `?truncateTxome` for details):
+
+```{r "truncate_sgd_overlap", eval=FALSE}
+overlap_file <- tempfile("sacCer3_chrI.sgd.overlaps", fileext=".tsv")
+txdb_w500_quiet <- truncate3primeTxome(txdb, maxTxLength=500,
+                                        overlapFile=overlap_file, quiet=TRUE)
+```
+
 ### Exporting a New Annotation
 We can now export this new transcriptome as a GTF file that could be used in an alignment pipeline or genome viewer. Note that ending the file name with **.gz** will automatically signal to that the file should be exported with **gzip** compression.
 
 ```{r "export_gtf", eval=FALSE}
-gtf_file <- tempfile("sacCer3_chrI.sgd.txcutr_w500", fileext=".gtf.gz")
+gtf_file <- tempfile("sacCer3_chrI.sgd.txendcutr_w500", fileext=".gtf.gz")
 exportGTF(txdb_w500, file=gtf_file)
 ```
 
@@ -139,13 +158,13 @@ If we need to prepare an index for alignment or pseudo-alignment, this requires 
 library(BSgenome.Scerevisiae.UCSC.sacCer3)
 sacCer3 <- BSgenome.Scerevisiae.UCSC.sacCer3
 
-fasta_file <- tempfile("sacCer3_chrI.sgd.txcutr_w500", fileext=".fa.gz")
+fasta_file <- tempfile("sacCer3_chrI.sgd.txendcutr_w500", fileext=".fa.gz")
 exportFASTA(txdb_w500, genome=sacCer3, file=fasta_file)
 ```
 
 ### Merge Table
 
-Another file that might be needed by some quantification tools is a merge table. That is, a file that represents a map from the input transcripts to either output transcripts or genes. In some pipelines, one may wish to merge any transcripts that have any overlap. In others, there might be some minimum amount of distance between 3' ends below which it may be uninteresting to discern between. For this, `txcutr` provides a `generateMergeTable` method, together with a `minDistance` argument.
+Another file that might be needed by some quantification tools is a merge table. That is, a file that represents a map from the input transcripts to either output transcripts or genes. In some pipelines, one may wish to merge any transcripts that have any overlap. In others, there might be some minimum amount of distance between 3' ends below which it may be uninteresting to discern between. For this, `txendcutr` provides a `generateMergeTable` method, together with a `minDistance` argument.
 
 To create a merge for any overlaps whatsoever, one would set the `minDistance` to be identical to the maximum transcript length.
 
@@ -160,7 +179,7 @@ In this particular case, these first transcripts each map to themselves. This sh
 df_merge[df_merge$tx_in != df_merge$tx_out,]
 ```
 
-Algorithmically, `txcutr` will give preference to more distal transcripts in the merge assignment. For example, looking at transcripts from gene **YAL026C**:
+Algorithmically, `txendcutr` will give preference to more distal transcripts in the merge assignment. For example, looking at transcripts from gene **YAL026C**:
 
 ```{r}
 transcripts(txdb_w500, columns=c("tx_name", "gene_id"),
@@ -174,19 +193,19 @@ Note that one can also directly export the merge table using the `exportMergeTab
 ## Notes on Usage
 
 ### Making TxDb Objects
-The `r Biocpkg("txdbmaker")` package provides a number of means to create custom `TxDb` objects that can then be used by `txcutr`. Alternative workflows might include starting from a GTF/GFF3 transcriptome annotation and using the `txdbmaker::makeTxDbFromGFF` method, or using the `txdbmaker::makeTxDbFromBiomart` method to create the object from Biomart resources.
+The `r Biocpkg("txdbmaker")` package provides a number of means to create custom `TxDb` objects that can then be used by `txendcutr`. Alternative workflows might include starting from a GTF/GFF3 transcriptome annotation and using the `txdbmaker::makeTxDbFromGFF` method, or using the `txdbmaker::makeTxDbFromBiomart` method to create the object from Biomart resources.
 
 ### BiocParallel
 The truncation step can be computationally intensive, especially for species whose annotations include many alternative transcript isoforms, such as mouse or human. The `truncateTxome` method makes use of `BiocParallel::bplapply` when applicable, and will respect the `BiocParallel::register()` setting, unless an explicit `BPPARAM` argument is supplied. 
 
-We encourage use of a parallel parameter option, such as `MulticoreParam`, but it should be noted that with mammalian transcriptomes this results in a maximum RAM usage between 3-4GB per core. Please ensure adequate memory *per core* is available.
+We encourage use of a parallel parameter option, such as `MulticoreParam`. Please ensure adequate memory *per core* is available.
 
 ### Alternative Cleavage and Polyadenylation
 This tool developed out of a pipeline for quantifying 3' UTR isoform expression from scRNA-seq. In such an application, it can be helpful to pre-filter transcripts that may be included in an annotation, but do not have validated 3' ends. Of particular note are the GENCODE annotations: we recommend pre-filtering GENCODE GTF/GFF files to remove any entries with the tag **mRNA_end_NF**.
 
 # Reproducibility
 
-The `r Biocpkg("txcutr")` package `r Citep(bib[["txcutr"]])` was made possible thanks to:
+The `txendcutr` package `r Citep(bib[["txendcutr"]])` (forked from `r Biocpkg("txcutr")`) was made possible thanks to:
 
 * R `r Citep(bib[["R"]])`
 * `r Biocpkg("BiocStyle")` `r Citep(bib[["BiocStyle"]])`

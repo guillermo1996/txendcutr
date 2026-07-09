@@ -1,3 +1,17 @@
+# txendcutr 1.0.0
+
+First standalone release of `txendcutr`, forked from
+[`txcutr`](https://github.com/mfansler/txcutr) 1.15.2
+
+NEW FEATURES
+
+* Native 5' truncation support: `truncateTxome()` gains a `txEnd` argument
+  (`"3prime"`/`"5prime"`), with `truncate3primeTxome()` and
+  `truncate5primeTxome()` convenience wrappers (each with a `quiet` option).
+* `truncateTxome()` and its wrappers gain an `overlapFile` argument to
+  export a TSV of transcript pairs collapsed as duplicates during
+  truncation.
+
 # txcutr 1.15.2
 
 NEW FEATURES

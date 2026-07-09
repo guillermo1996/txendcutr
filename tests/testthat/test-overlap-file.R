@@ -67,7 +67,7 @@ gr_collapse_test <- GRanges(
   )
 )
 
-txdb_collapse_test <- txcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_collapse_test))
+txdb_collapse_test <- txendcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_collapse_test))
 
 ## Three transcripts with identical boundaries after truncation but different
 ## internal exon structure
@@ -121,7 +121,7 @@ gr_exon_structure_test <- GRanges(
   )
 )
 
-txdb_exon_structure_test <- txcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_exon_structure_test))
+txdb_exon_structure_test <- txendcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_exon_structure_test))
 
 ########
 ## Tests

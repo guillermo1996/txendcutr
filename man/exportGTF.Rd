@@ -4,7 +4,7 @@
 \alias{exportGTF}
 \title{Export GTF}
 \usage{
-exportGTF(txdb, file, source = "txcutr")
+exportGTF(txdb, file, source = "txendcutr")
 }
 \arguments{
 \item{txdb}{transcriptome to be output}

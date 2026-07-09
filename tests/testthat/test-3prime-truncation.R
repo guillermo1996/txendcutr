@@ -18,10 +18,10 @@ gr_single_contig_w1000 <- GRanges(
   exon_id = c(NA, NA, "exon_1")
 )
 
-txdb_single_contig_w1000 <- txcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_single_contig_w1000))
+txdb_single_contig_w1000 <- txendcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_single_contig_w1000))
 
 ## Negative Strand
-txdb_single_contig_w1000_neg <- txcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(invertStrand(gr_single_contig_w1000)))
+txdb_single_contig_w1000_neg <- txendcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(invertStrand(gr_single_contig_w1000)))
 
 ## Multi Exon
 gr_multi_exon <- GRanges(
@@ -39,10 +39,10 @@ gr_multi_exon <- GRanges(
   exon_id = c(NA, NA, "exon_1", "exon_2", "exon_3")
 )
 
-txdb_multi_exon <- txcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_multi_exon))
+txdb_multi_exon <- txendcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(gr_multi_exon))
 
 ## Negative Strand
-txdb_multi_exon_neg <- txcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(invertStrand(gr_multi_exon)))
+txdb_multi_exon_neg <- txendcutr:::.suppressTxDbGenomeWarning(makeTxDbFromGRanges(invertStrand(gr_multi_exon)))
 
 ########
 ## Tests

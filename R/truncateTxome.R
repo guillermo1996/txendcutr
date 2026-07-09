@@ -126,7 +126,7 @@ setMethod("truncate5primeTxome", "TxDb", function(txdb, maxTxLength = 300, overl
 #' @importFrom AnnotationDbi select taxonomyId
 #' @importFrom S4Vectors queryHits subjectHits split
 #' @importFrom methods setMethod
-#' @importFrom dplyr %>%
+#' @importFrom dplyr %>% mutate filter
 #' @importFrom tibble as_tibble
 #' @importFrom utils write.table
 #' @export
@@ -248,7 +248,7 @@ setMethod("truncateTxome", "TxDb", function(txdb,
   # Generate the final TxDb object
   dfMetadata <- data.frame(
     name=c("Truncated by", "Maximum Transcript Length", "Truncation End"),
-    value=c("txcutr", maxTxLength, txEnd)
+    value=c("txendcutr", maxTxLength, txEnd)
   )
 
   .suppressTxDbGenomeWarning(
@@ -275,7 +275,7 @@ setMethod("truncateTxome", "TxDb", function(txdb,
 #' @importFrom methods slot
 #' @importFrom BiocParallel bplapply bpparam
 #' @importFrom tibble as_tibble
-#' @importFrom dplyr %>% distinct mutate ntile row_number left_join group_by group_split bind_rows arrange filter if_else
+#' @importFrom dplyr %>% distinct mutate ntile row_number left_join group_by group_split bind_rows arrange filter if_else ungroup
 #' 
 .clipTranscript <- function(grl, maxTxLength, txEnd, BPPARAM) {
   # Merge all exons into a single GRanges and add the transcript ID
