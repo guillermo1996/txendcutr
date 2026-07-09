@@ -74,6 +74,8 @@ setMethod("truncate5primeTxome", "TxDb", function(txdb, maxTxLength = 300, overl
 #' @param quiet suppress progress messages. Only available for
 #'   \code{truncate3primeTxome} and \code{truncate5primeTxome}. Defaults to
 #'   FALSE
+#' @param ... additional arguments (currently unused by the \code{TxDb}
+#'   method; reserved for future extensions)
 #' @return a \code{TxDb} object
 #'
 #' @details \code{truncate3primeTxome} and \code{truncate5primeTxome} are

@@ -77,6 +77,9 @@ overlaps (query_transcript, subject_transcript) post-truncation. If NULL
 \item{BPPARAM}{A \linkS4class{BiocParallelParam} object specifying whether
 and how the method should be parallelized.}
 
+\item{...}{additional arguments (currently unused by the \code{TxDb}
+method; reserved for future extensions)}
+
 \item{quiet}{suppress progress messages. Only available for
 \code{truncate3primeTxome} and \code{truncate5primeTxome}. Defaults to
 FALSE}

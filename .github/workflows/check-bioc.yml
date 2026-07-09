@@ -1,8 +1,9 @@
-## GitHub Actions workflow for R CMD check + test coverage, adapted from the
-## biocthis-generated workflow used by the upstream txcutr package
+## GitHub Actions workflow for R CMD check, adapted from the biocthis-generated
+## workflow used by the upstream txcutr package
 ## (https://github.com/mfansler/txcutr/blob/bioc-check/.github/workflows/check-bioc.yml).
-## Simplified for txendcutr: drops RUnit, pkgdown deployment, and Docker
-## image publishing, none of which are set up for this fork.
+## Simplified for txendcutr: drops RUnit, pkgdown deployment, Docker image
+## publishing, and codecov coverage reporting, none of which are set up for
+## this fork.
 
 on:
   push:
@@ -20,9 +21,14 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - { os: ubuntu-latest, r: '4.5', bioc: '3.22', cont: "bioconductor/bioconductor_docker:devel", rspm: "https://packagemanager.rstudio.com/cran/__linux__/jammy/latest" }
-          - { os: macOS-latest, r: '4.5', bioc: '3.22' }
-          - { os: windows-latest, r: '4.5', bioc: '3.22' }
+          ## The Linux job uses Bioconductor's `devel` Docker image, which
+          ## always ships an R version pre-matched to its own Bioconductor
+          ## devel version -- the `bioc`/`r` values below are not used for
+          ## that job (see "Set BiocVersion" step) and are only kept here
+          ## for the cache-key/artifact-name strings.
+          - { os: ubuntu-latest, r: '4.6', bioc: '3.23', cont: "bioconductor/bioconductor_docker:devel", rspm: "https://packagemanager.rstudio.com/cran/__linux__/jammy/latest" }
+          - { os: macOS-latest, r: '4.6', bioc: '3.23' }
+          - { os: windows-latest, r: '4.6', bioc: '3.23' }
 
     env:
       R_REMOTES_NO_ERRORS_FROM_WARNINGS: true
@@ -36,7 +42,7 @@ jobs:
       - name: Set R Library home on Linux
         if: runner.os == 'Linux'
         run: |
-          mkdir /__w/_temp/Library
+          mkdir -p /__w/_temp/Library
           echo ".libPaths('/__w/_temp/Library')" > ~/.Rprofile
 
       - name: Checkout Repository
@@ -63,16 +69,16 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.R_LIBS_USER }}
-          key: cache-v1-${{ runner.os }}-biocversion-devel-r-4.5-${{ hashFiles('.github/depends.Rds') }}
-          restore-keys: cache-v1-${{ runner.os }}-biocversion-devel-r-4.5-
+          key: cache-v1-${{ runner.os }}-biocversion-devel-r-4.6-${{ hashFiles('.github/depends.Rds') }}
+          restore-keys: cache-v1-${{ runner.os }}-biocversion-devel-r-4.6-
 
       - name: Cache R packages on Linux
         if: "!contains(github.event.head_commit.message, '/nocache') && runner.os == 'Linux'"
         uses: actions/cache@v4
         with:
           path: /home/runner/work/_temp/Library
-          key: cache-v1-${{ runner.os }}-biocversion-devel-r-4.5-${{ hashFiles('.github/depends.Rds') }}
-          restore-keys: cache-v1-${{ runner.os }}-biocversion-devel-r-4.5-
+          key: cache-v1-${{ runner.os }}-biocversion-devel-r-4.6-${{ hashFiles('.github/depends.Rds') }}
+          restore-keys: cache-v1-${{ runner.os }}-biocversion-devel-r-4.6-
 
       - name: Install macOS system dependencies
         if: matrix.config.os == 'macOS-latest'
@@ -87,6 +93,11 @@ jobs:
         shell: Rscript {0}
 
       - name: Set BiocVersion
+        ## Skipped on Linux: the bioconductor_docker:devel image already
+        ## ships an R version matched to its own Bioconductor devel version.
+        ## Forcing a hardcoded version pin here goes stale every time that
+        ## image moves forward and isn't necessary in the first place.
+        if: runner.os != 'Linux'
         run: |
           BiocManager::install(version = "${{ matrix.config.bioc }}", ask = FALSE, force = TRUE)
         shell: Rscript {0}
@@ -105,11 +116,6 @@ jobs:
         run: |
           message(paste('****', Sys.time(), 'pass number 2 at installing dependencies: any remaining dependencies ****'))
           remotes::install_local(dependencies = TRUE, repos = BiocManager::repositories(), build_vignettes = TRUE, upgrade = TRUE, force = TRUE)
-        shell: Rscript {0}
-
-      - name: Install covr
-        if: runner.os == 'Linux'
-        run: remotes::install_cran("covr")
         shell: Rscript {0}
 
       - name: Session info
@@ -148,16 +154,9 @@ jobs:
           )
         shell: Rscript {0}
 
-      - name: Test coverage
-        if: runner.os == 'Linux'
-        run: covr::codecov(coverage = covr::package_coverage(type = "all"), token = Sys.getenv("CODECOV_TOKEN"))
-        shell: Rscript {0}
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
       - name: Upload check results
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ runner.os }}-biocversion-devel-r-4.5-results
+          name: ${{ runner.os }}-biocversion-devel-r-4.6-results
           path: check
