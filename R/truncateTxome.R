@@ -215,7 +215,7 @@ setMethod("truncateTxome", "TxDb", function(txdb,
   mcols(grExons)["type"] <- "exon"
 
   ## add gene id
-  mcols(grExons)["gene_id"] <- mapTxToGene[mcols(grExons)$transcript_id]
+  mcols(grExons)["gene_id"] <- mapTxToGene[as.character(mcols(grExons)$transcript_id)]
 
   ## reindex exon info
   grExons <- sort(grExons)
@@ -233,7 +233,7 @@ setMethod("truncateTxome", "TxDb", function(txdb,
   mcols(grTxs)["type"] <- "transcript"
   
   ## add gene id
-  mcols(grTxs)["gene_id"] <- mapTxToGene[grTxs$transcript_id]
+  mcols(grTxs)["gene_id"] <- mapTxToGene[as.character(grTxs$transcript_id)]
   
   grTxs <- grTxs[order(grTxs$transcript_id)]
   message("Done.")

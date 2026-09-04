@@ -1,5 +1,11 @@
 # txendcutr 1.0.0
 
+BUG FIXES
+
+* Fixed an issue with gene and transcript mapping during truncation
+
+# txendcutr 1.0.0
+
 First standalone release of `txendcutr`, forked from
 [`txcutr`](https://github.com/mfansler/txcutr) 1.15.2
 

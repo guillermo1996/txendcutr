@@ -10,7 +10,7 @@ Description: Various mRNA sequencing library preparation methods generate
     corresponding sequences. txendcutr is a standalone fork of txcutr
     (<https://github.com/mfansler/txcutr>) that adds 5' truncation
     support and an optimized truncation pipeline.
-Version: 1.0.0
+Version: 1.0.1
 Date: 2026-07-09
 Authors@R: c(
     person(given = "Guillermo",
